@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "mcpcontrol": {
+      "command": "node",
+      "args": [
+        "C:/ProgramData/MCPControl/dist/server.js"
+      ],
+      "transport": "stdio"
+    }
+  }
+}
