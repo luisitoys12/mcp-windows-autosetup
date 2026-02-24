@@ -14,6 +14,7 @@ Write-Host "Instalando Node.js LTS..." -ForegroundColor Cyan
 # Intentar instalar con winget primero
 if (Get-Command winget -ErrorAction SilentlyContinue) {
     Write-Host "  Usando winget para instalar Node.js..." -ForegroundColor Green
+    $useDirectDownload = $false
     try {
         winget install -e --id OpenJS.NodeJS.LTS --silent --accept-source-agreements --accept-package-agreements
         Write-Host "  Node.js instalado correctamente vía winget" -ForegroundColor Green
