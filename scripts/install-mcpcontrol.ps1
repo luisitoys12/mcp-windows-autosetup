@@ -4,7 +4,7 @@
 .DESCRIPTION
     Instala MCPControl globalmente vía npm.
     MCPControl permite a Claude y Gemini controlar Windows (mouse, teclado, ventanas, etc.)
-    Requiere Python 3.6+ para compilar módulos nativos.
+    Requiere Python 3.13+ para compatibilidad con Windows-MCP extension de Claude Desktop.
 #>
 
 Set-StrictMode -Version Latest
@@ -21,7 +21,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 function Test-PythonInstalled {
     try {
         $pythonVersion = python --version 2>&1
-        if ($pythonVersion -match "Python (\d+\.\d+)" -and [version]$matches[1] -ge [version]"3.6") {
+        if ($pythonVersion -match "Python (\d+\.\d+)" -and [version]$matches[1] -ge [version]"3.13") {
             return $true
         }
     } catch {
@@ -32,12 +32,17 @@ function Test-PythonInstalled {
 
 # Verificar/instalar Python
 if (-not (Test-PythonInstalled)) {
-    Write-Host "  Python no encontrado. MCPControl necesita Python 3.6+ para compilar módulos nativos..." -ForegroundColor Yellow
+    Write-Host "  Python 3.13+ no encontrado. MCPControl y Windows-MCP extension requieren Python 3.13+..." -ForegroundColor Yellow
     
     if (Get-Command winget -ErrorAction SilentlyContinue) {
-        Write-Host "  Instalando Python 3.11 con winget..." -ForegroundColor Green
+        Write-Host "  Instalando Python 3.13 con winget..." -ForegroundColor Green
         try {
-            winget install -e --id Python.Python.3.11 --silent --accept-source-agreements --accept-package-agreements
+            # Desinstalar versiones antiguas si existen
+            winget uninstall Python.Python.3.11 --silent 2>$null
+            winget uninstall Python.Python.3.12 --silent 2>$null
+            
+            # Instalar Python 3.13
+            winget install -e --id Python.Python.3.13 --silent --accept-source-agreements --accept-package-agreements
             
             # Actualizar PATH para esta sesión
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
@@ -56,7 +61,9 @@ if (-not (Test-PythonInstalled)) {
             
             if (Test-PythonInstalled) {
                 $pythonPath = (Get-Command python).Source
-                Write-Host "  ✅ Python instalado: $pythonPath" -ForegroundColor Green
+                $pythonVer = python --version
+                Write-Host "  ✅ Python instalado: $pythonVer" -ForegroundColor Green
+                Write-Host "  Ubicación: $pythonPath" -ForegroundColor Gray
                 
                 # Configurar variables de entorno para npm/node-gyp
                 $env:PYTHON = $pythonPath
@@ -67,18 +74,19 @@ if (-not (Test-PythonInstalled)) {
         } catch {
             Write-Host "  ⚠️ No se pudo instalar Python automáticamente" -ForegroundColor Yellow
             Write-Host ""
-            Write-Host "  Para instalar MCPControl necesitas:" -ForegroundColor Yellow
-            Write-Host "  1. Instalar Python 3.11 desde: https://www.python.org/downloads/" -ForegroundColor White
+            Write-Host "  Para instalar MCPControl y usar Windows-MCP en Claude Desktop necesitas:" -ForegroundColor Yellow
+            Write-Host "  1. Instalar Python 3.13 desde: https://www.python.org/downloads/" -ForegroundColor White
             Write-Host "  2. Marcar 'Add Python to PATH' durante instalación" -ForegroundColor White
-            Write-Host "  3. Reiniciar PowerShell y ejecutar: npm install -g mcp-control" -ForegroundColor White
+            Write-Host "  3. Reiniciar Claude Desktop después de instalar Python" -ForegroundColor White
+            Write-Host "  4. Ejecutar: npm install -g mcp-control" -ForegroundColor White
             Write-Host ""
             Write-Host "  Saltando MCPControl por ahora..." -ForegroundColor Gray
             return
         }
     } else {
-        Write-Host "  ⚠️ winget no disponible y Python no instalado" -ForegroundColor Yellow
+        Write-Host "  ⚠️ winget no disponible y Python 3.13+ no instalado" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "  Instala Python 3.11 manualmente desde: https://www.python.org/downloads/" -ForegroundColor White
+        Write-Host "  Instala Python 3.13 manualmente desde: https://www.python.org/downloads/" -ForegroundColor White
         Write-Host "  Luego ejecuta: npm install -g mcp-control" -ForegroundColor White
         Write-Host ""
         Write-Host "  Saltando MCPControl por ahora..." -ForegroundColor Gray
@@ -111,9 +119,10 @@ try {
         Write-Host "  ✅ MCPControl instalado correctamente" -ForegroundColor Green
         Write-Host "  Versión: $mcpVersion" -ForegroundColor Gray
         Write-Host ""
-        Write-Host "  Para usar MCPControl:" -ForegroundColor Yellow
-        Write-Host "  - Modo local (stdio): configurar en claude_desktop_config.json" -ForegroundColor White
-        Write-Host "  - Modo red (SSE): ejecutar 'mcp-control --sse' y usar http://localhost:3232/mcp" -ForegroundColor White
+        Write-Host "  Para usar en Claude Desktop:" -ForegroundColor Yellow
+        Write-Host "  1. Reinicia Claude Desktop si estaba abierto" -ForegroundColor White
+        Write-Host "  2. Instala la extensión Windows-MCP desde el menú de extensiones" -ForegroundColor White
+        Write-Host "  3. Ya puedes controlar Windows con Claude!" -ForegroundColor White
     } else {
         Write-Host "  ⚠️ MCPControl se instaló pero no responde correctamente" -ForegroundColor Yellow
         Write-Host "  Esto puede ser normal. Verifica con: mcp-control --version" -ForegroundColor Gray
@@ -127,7 +136,7 @@ try {
     Write-Host "  npm install -g mcp-control" -ForegroundColor White
     Write-Host ""
     Write-Host "  Si el error es sobre Python/node-gyp:" -ForegroundColor Yellow
-    Write-Host "  1. Verifica Python: python --version" -ForegroundColor White
+    Write-Host "  1. Verifica Python: python --version (debe ser 3.13+)" -ForegroundColor White
     Write-Host "  2. Asegúrate de tener Visual Studio Build Tools" -ForegroundColor White
     Write-Host "  3. Prueba: npm install -g windows-build-tools" -ForegroundColor White
     Write-Host ""
