@@ -7,7 +7,7 @@
     Script dedicado para instalar o reparar la instalación de Windows-MCP.
     Requiere que Node.js y Claude Desktop ya estén instalados.
 .NOTES
-    Versión: 1.0.0
+    Versión: 1.0.1
     Autor: Luis Martinez - EstacionKusMedias
     Requiere: PowerShell 5.1+ y permisos de administrador
 .EXAMPLE
@@ -22,7 +22,7 @@ $ProgressPreference = "SilentlyContinue"
 # Banner
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Cyan
-Write-Host "  Windows-MCP Fix/Installer v1.0" -ForegroundColor Cyan
+Write-Host "  Windows-MCP Fix/Installer v1.0.1" -ForegroundColor Cyan
 Write-Host "  Por Luis Martinez - EstacionKusMedias" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
@@ -31,10 +31,10 @@ try {
     # Verificar Node.js
     Write-Host "[1/4] Verificando Node.js..." -ForegroundColor Yellow
     if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-        throw "Error: Node.js no está instalado. Instálalo primero desde: https://nodejs.org"
+        throw "Error: Node.js no esta instalado. Instalalo primero desde: https://nodejs.org"
     }
     $nodeVersion = node --version
-    Write-Host "      ✅ Node.js instalado: $nodeVersion" -ForegroundColor Green
+    Write-Host "      [OK] Node.js instalado: $nodeVersion" -ForegroundColor Green
 
     # Verificar/Instalar Python 3.13+
     Write-Host "[2/4] Verificando Python 3.13+..." -ForegroundColor Yellow
@@ -76,21 +76,21 @@ try {
         $retries = 0
         
         while (-not (Test-Python313) -and $retries -lt $maxRetries) {
-            Write-Host "      Esperando a que Python esté disponible... ($retries/$maxRetries)" -ForegroundColor Gray
+            Write-Host "      Esperando a que Python este disponible... ($retries/$maxRetries)" -ForegroundColor Gray
             Start-Sleep -Seconds 2
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
             $retries++
         }
         
         if (-not (Test-Python313)) {
-            throw "Python 3.13 no se instaló correctamente. Instálalo manualmente y ejecuta este script de nuevo."
+            throw "Python 3.13 no se instalo correctamente. Instalalo manualmente y ejecuta este script de nuevo."
         }
     }
     
     $pythonVersion = python --version
     $pythonPath = (Get-Command python).Source
-    Write-Host "      ✅ Python instalado: $pythonVersion" -ForegroundColor Green
-    Write-Host "      Ubicación: $pythonPath" -ForegroundColor Gray
+    Write-Host "      [OK] Python instalado: $pythonVersion" -ForegroundColor Green
+    Write-Host "      Ubicacion: $pythonPath" -ForegroundColor Gray
     
     # Configurar variable de entorno PYTHON
     Write-Host "      Configurando variable de entorno PYTHON..." -ForegroundColor Gray
@@ -100,9 +100,9 @@ try {
 
     # Instalar mcp-control
     Write-Host "[3/4] Instalando mcp-control..." -ForegroundColor Yellow
-    Write-Host "      (Esto puede tomar 2-3 minutos, compilando módulos nativos...)" -ForegroundColor Gray
+    Write-Host "      (Esto puede tomar 2-3 minutos, compilando modulos nativos...)" -ForegroundColor Gray
     
-    # Desinstalar versión anterior si existe
+    # Desinstalar version anterior si existe
     npm uninstall -g mcp-control 2>$null
     
     # Instalar mcp-control
@@ -111,19 +111,19 @@ try {
     # Actualizar PATH
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
     
-    # Verificar instalación
+    # Verificar instalacion
     Start-Sleep -Seconds 3
     
     try {
         $mcpVersion = & mcp-control --version 2>&1
         if ($mcpVersion -and $mcpVersion -notmatch "error" -and $mcpVersion -notmatch "not recognized") {
-            Write-Host "      ✅ mcp-control instalado: $mcpVersion" -ForegroundColor Green
+            Write-Host "      [OK] mcp-control instalado: $mcpVersion" -ForegroundColor Green
         } else {
-            Write-Host "      ⚠️ mcp-control instalado pero no responde correctamente" -ForegroundColor Yellow
-            Write-Host "      Ubicación: $env:APPDATA\npm\mcp-control.cmd" -ForegroundColor Gray
+            Write-Host "      [!] mcp-control instalado pero no responde correctamente" -ForegroundColor Yellow
+            Write-Host "      Ubicacion: $env:APPDATA\npm\mcp-control.cmd" -ForegroundColor Gray
         }
     } catch {
-        Write-Host "      ⚠️ mcp-control instalado pero no responde aún" -ForegroundColor Yellow
+        Write-Host "      [!] mcp-control instalado pero no responde aun" -ForegroundColor Yellow
     }
 
     # Verificar Claude Desktop
@@ -133,41 +133,41 @@ try {
     $claudeConfigPath = "$env:APPDATA\Claude\claude_desktop_config.json"
     
     if (Test-Path $claudePath) {
-        Write-Host "      ✅ Claude Desktop encontrado" -ForegroundColor Green
-        Write-Host "      Ubicación: $claudePath" -ForegroundColor Gray
+        Write-Host "      [OK] Claude Desktop encontrado" -ForegroundColor Green
+        Write-Host "      Ubicacion: $claudePath" -ForegroundColor Gray
     } else {
-        Write-Host "      ⚠️ Claude Desktop no encontrado" -ForegroundColor Yellow
-        Write-Host "      Instálalo desde: https://claude.ai/download" -ForegroundColor Yellow
+        Write-Host "      [!] Claude Desktop no encontrado" -ForegroundColor Yellow
+        Write-Host "      Instalalo desde: https://claude.ai/download" -ForegroundColor Yellow
     }
     
     if (Test-Path $claudeConfigPath) {
-        Write-Host "      ✅ Configuración MCP encontrada" -ForegroundColor Green
+        Write-Host "      [OK] Configuracion MCP encontrada" -ForegroundColor Green
     } else {
-        Write-Host "      ℹ️ Configuración MCP no encontrada (se creará automáticamente)" -ForegroundColor Cyan
+        Write-Host "      [i] Configuracion MCP no encontrada (se creara automaticamente)" -ForegroundColor Cyan
     }
 
-    # Éxito
+    # Exito
     Write-Host ""
     Write-Host "=========================================" -ForegroundColor Green
-    Write-Host "  ✅ Windows-MCP configurado con éxito!" -ForegroundColor Green
+    Write-Host "  [OK] Windows-MCP configurado con exito!" -ForegroundColor Green
     Write-Host "=========================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Próximos pasos:" -ForegroundColor Cyan
+    Write-Host "Proximos pasos:" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "1. CIERRA Claude Desktop completamente" -ForegroundColor White
-    Write-Host "   (Click derecho en el ícono del taskbar → Exit)" -ForegroundColor Gray
+    Write-Host "   (Click derecho en el icono del taskbar -> Exit)" -ForegroundColor Gray
     Write-Host ""
     Write-Host "2. Vuelve a abrir Claude Desktop" -ForegroundColor White
     Write-Host ""
     Write-Host "3. En Claude Desktop:" -ForegroundColor White
-    Write-Host "   - Haz clic en el menú (3 líneas arriba a la izquierda)" -ForegroundColor Gray
+    Write-Host "   - Haz clic en el menu (3 lineas arriba a la izquierda)" -ForegroundColor Gray
     Write-Host "   - Busca 'Windows-MCP' en extensiones" -ForegroundColor Gray
     Write-Host "   - Haz clic en 'Install'" -ForegroundColor Gray
     Write-Host ""
     Write-Host "4. Prueba con:" -ForegroundColor White
     Write-Host "   'Abre el Bloc de notas y escribe Hola Mundo'" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "Configuración:" -ForegroundColor Cyan
+    Write-Host "Configuracion:" -ForegroundColor Cyan
     Write-Host "  Python: $pythonVersion en $pythonPath" -ForegroundColor Gray
     Write-Host "  Node.js: $nodeVersion" -ForegroundColor Gray
     Write-Host "  mcp-control: Instalado globalmente" -ForegroundColor Gray
@@ -180,7 +180,7 @@ try {
 
 } catch {
     Write-Host ""
-    Write-Host "❌ Error durante la instalación:" -ForegroundColor Red
+    Write-Host "[X] Error durante la instalacion:" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host ""
     Write-Host "Por favor reporta este error en:" -ForegroundColor Yellow
