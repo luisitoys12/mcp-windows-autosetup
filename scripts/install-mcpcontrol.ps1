@@ -4,6 +4,7 @@
 .DESCRIPTION
     Instala MCPControl globalmente vía npm.
     MCPControl permite a Claude y Gemini controlar Windows (mouse, teclado, ventanas, etc.)
+    Requiere Python 3.6+ para compilar módulos nativos.
 #>
 
 Set-StrictMode -Version Latest
@@ -16,14 +17,72 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     throw "Error: npm no está disponible. Asegúrate de que Node.js esté instalado correctamente."
 }
 
+# Función para verificar Python
+function Test-PythonInstalled {
+    try {
+        $pythonVersion = python --version 2>&1
+        if ($pythonVersion -match "Python (\d+\.\d+)" -and [version]$matches[1] -ge [version]"3.6") {
+            return $true
+        }
+    } catch {
+        return $false
+    }
+    return $false
+}
+
+# Verificar/instalar Python
+if (-not (Test-PythonInstalled)) {
+    Write-Host "  Python no encontrado. MCPControl necesita Python 3.6+ para compilar módulos nativos..." -ForegroundColor Yellow
+    
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        Write-Host "  Instalando Python 3.11 con winget..." -ForegroundColor Green
+        try {
+            winget install -e --id Python.Python.3.11 --silent --accept-source-agreements --accept-package-agreements
+            
+            # Actualizar PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+            
+            Start-Sleep -Seconds 3
+            
+            if (Test-PythonInstalled) {
+                $pythonPath = (Get-Command python).Source
+                Write-Host "  ✅ Python instalado: $pythonPath" -ForegroundColor Green
+                
+                # Configurar npm para usar este Python
+                npm config set python "$pythonPath"
+            } else {
+                throw "Python no responde después de instalación"
+            }
+        } catch {
+            Write-Host "  ⚠️ No se pudo instalar Python automáticamente" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "  Para instalar MCPControl necesitas:" -ForegroundColor Yellow
+            Write-Host "  1. Instalar Python 3.11 desde: https://www.python.org/downloads/" -ForegroundColor White
+            Write-Host "  2. Marcar 'Add Python to PATH' durante instalación" -ForegroundColor White
+            Write-Host "  3. Reiniciar PowerShell y ejecutar: npm install -g mcp-control" -ForegroundColor White
+            Write-Host ""
+            Write-Host "  Saltando MCPControl por ahora..." -ForegroundColor Gray
+            return
+        }
+    } else {
+        Write-Host "  ⚠️ winget no disponible y Python no instalado" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "  Instala Python 3.11 manualmente desde: https://www.python.org/downloads/" -ForegroundColor White
+        Write-Host "  Luego ejecuta: npm install -g mcp-control" -ForegroundColor White
+        Write-Host ""
+        Write-Host "  Saltando MCPControl por ahora..." -ForegroundColor Gray
+        return
+    }
+}
+
 try {
-    Write-Host "  Instalando mcp-control globalmente..." -ForegroundColor Green
+    Write-Host "  Instalando mcp-control globalmente (esto puede tomar 2-3 minutos)..." -ForegroundColor Green
     
-    # Instalar desde npm (es un paquete publicado)
-    npm install -g mcp-control --loglevel=error 2>&1 | Out-Null
+    # Instalar desde npm con verbose para ver progreso
+    $process = Start-Process npm -ArgumentList "install","-g","mcp-control","--loglevel=warn" -NoNewWindow -PassThru -Wait
     
-    if ($LASTEXITCODE -ne 0) {
-        throw "npm install falló con código $LASTEXITCODE"
+    if ($process.ExitCode -ne 0) {
+        throw "npm install falló con código $($process.ExitCode)"
     }
     
     # Verificar instalación
@@ -47,6 +106,10 @@ try {
     Write-Host ""
     Write-Host "  Puedes intentar manualmente:" -ForegroundColor Yellow
     Write-Host "  npm install -g mcp-control" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  Si el error es sobre Python/node-gyp:" -ForegroundColor Yellow
+    Write-Host "  1. Verifica Python: python --version" -ForegroundColor White
+    Write-Host "  2. Instala build tools: npm install -g windows-build-tools" -ForegroundColor White
     Write-Host ""
     Write-Host "  Documentación: https://github.com/claude-did-this/MCPControl" -ForegroundColor Gray
     throw
