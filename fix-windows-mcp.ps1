@@ -7,7 +7,7 @@
     Script dedicado para instalar o reparar la instalación de Windows-MCP.
     Requiere que Node.js y Claude Desktop ya estén instalados.
 .NOTES
-    Versión: 1.0.1
+    Versión: 1.0.2
     Autor: Luis Martinez - EstacionKusMedias
     Requiere: PowerShell 5.1+ y permisos de administrador
 .EXAMPLE
@@ -22,14 +22,14 @@ $ProgressPreference = "SilentlyContinue"
 # Banner
 Write-Host ""
 Write-Host "=========================================" -ForegroundColor Cyan
-Write-Host "  Windows-MCP Fix/Installer v1.0.1" -ForegroundColor Cyan
+Write-Host "  Windows-MCP Fix/Installer v1.0.2" -ForegroundColor Cyan
 Write-Host "  Por Luis Martinez - EstacionKusMedias" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
 
 try {
     # Verificar Node.js
-    Write-Host "[1/4] Verificando Node.js..." -ForegroundColor Yellow
+    Write-Host "[1/5] Verificando Node.js..." -ForegroundColor Yellow
     if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
         throw "Error: Node.js no esta instalado. Instalalo primero desde: https://nodejs.org"
     }
@@ -37,7 +37,7 @@ try {
     Write-Host "      [OK] Node.js instalado: $nodeVersion" -ForegroundColor Green
 
     # Verificar/Instalar Python 3.13+
-    Write-Host "[2/4] Verificando Python 3.13+..." -ForegroundColor Yellow
+    Write-Host "[2/5] Verificando Python 3.13+..." -ForegroundColor Yellow
     
     function Test-Python313 {
         try {
@@ -98,8 +98,36 @@ try {
     [System.Environment]::SetEnvironmentVariable("PYTHON", $pythonPath, "User")
     [System.Environment]::SetEnvironmentVariable("PYTHON", $pythonPath, "Machine")
 
+    # Verificar/Instalar Visual Studio Build Tools
+    Write-Host "[3/5] Verificando Visual Studio Build Tools..." -ForegroundColor Yellow
+    
+    # Verificar si ya estan instalados
+    $vsBuildToolsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"
+    $vsBuildToolsInstalled = Test-Path $vsBuildToolsPath
+    
+    if (-not $vsBuildToolsInstalled) {
+        Write-Host "      Build Tools no encontrados, instalando..." -ForegroundColor Yellow
+        Write-Host "      (Esto puede tomar 5-10 minutos, descargando ~2GB)" -ForegroundColor Gray
+        
+        # Verificar/Instalar Chocolatey
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Host "      Instalando Chocolatey..." -ForegroundColor Green
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+        }
+        
+        # Instalar Visual Studio Build Tools con Chocolatey
+        Write-Host "      Instalando Visual Studio 2022 Build Tools..." -ForegroundColor Green
+        choco install visualstudio2022-workload-vctools -y
+        
+        Write-Host "      [OK] Build Tools instalados" -ForegroundColor Green
+    } else {
+        Write-Host "      [OK] Visual Studio Build Tools ya instalados" -ForegroundColor Green
+    }
+
     # Instalar mcp-control
-    Write-Host "[3/4] Instalando mcp-control..." -ForegroundColor Yellow
+    Write-Host "[4/5] Instalando mcp-control..." -ForegroundColor Yellow
     Write-Host "      (Esto puede tomar 2-3 minutos, compilando modulos nativos...)" -ForegroundColor Gray
     
     # Desinstalar version anterior si existe
@@ -127,7 +155,7 @@ try {
     }
 
     # Verificar Claude Desktop
-    Write-Host "[4/4] Verificando Claude Desktop..." -ForegroundColor Yellow
+    Write-Host "[5/5] Verificando Claude Desktop..." -ForegroundColor Yellow
     
     $claudePath = "$env:LOCALAPPDATA\Programs\Claude\Claude.exe"
     $claudeConfigPath = "$env:APPDATA\Claude\claude_desktop_config.json"
@@ -170,6 +198,7 @@ try {
     Write-Host "Configuracion:" -ForegroundColor Cyan
     Write-Host "  Python: $pythonVersion en $pythonPath" -ForegroundColor Gray
     Write-Host "  Node.js: $nodeVersion" -ForegroundColor Gray
+    Write-Host "  Visual Studio Build Tools: Instalados" -ForegroundColor Gray
     Write-Host "  mcp-control: Instalado globalmente" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Si Windows-MCP sigue sin funcionar:" -ForegroundColor Yellow
